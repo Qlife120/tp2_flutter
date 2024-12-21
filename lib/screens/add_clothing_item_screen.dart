@@ -3,8 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/clothing_item.dart';
 
 class AddClothingItemScreen extends StatefulWidget {
+
   @override
+  
   _AddClothingItemScreenState createState() => _AddClothingItemScreenState();
+
 }
 
 class _AddClothingItemScreenState extends State<AddClothingItemScreen> {

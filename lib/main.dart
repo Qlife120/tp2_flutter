@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart'; // Import the Material package (UI)
 import 'package:firebase_auth/firebase_auth.dart'; // Enable authentication in firebase
 import 'package:firebase_core/firebase_core.dart'; // Required to use firebase 
-import 'package:tp2/screens/add_clothing_item_screen.dart';
 import 'screens/login_page.dart';
 import 'screens/home_page.dart';
 
@@ -38,11 +37,12 @@ class MyApp extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.active) {
           final User? user = snapshot.data;
           if (user == null) {
-            return LoginPage();
+            return LoginScreen();
             //return AddClothingItemScreen();
           }
           // TODO : change this // redirect the user to the home page with 3 icons and an add button 
-          return AddClothingItemScreen();
+          //return AddClothingItemScreen();
+          return HomePage(user: user);
 
           //return HomePage(user: user);
         }

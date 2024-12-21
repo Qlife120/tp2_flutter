@@ -1,29 +1,51 @@
-import 'package:flutter/material.dart'; // Import the Material package (UI)
-import 'package:firebase_auth/firebase_auth.dart'; // Enable authentication in firebase
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
-class LoginPage extends StatelessWidget {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  // Controllers to capture the user input
-  // TODO:  ASK WHT THE USE OF TEXTEDITINGCONTROLLER
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
 
-  // Firebase function for logging in
-  // TODO : ASK ABOUT The Future
-  Future<void> _signInWithEmailAndPassword(BuildContext context) async {
+class _LoginScreenState extends State<LoginScreen> {
+  final _loginController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  bool _isLoading = false;
+
+  Future<void> _loginUser() async {
+    if (_loginController.text.isEmpty || _passwordController.text.isEmpty) {
+      // message de la console critere #5
+      print("Champs vides : veuillez entrer un login et un mot de passe.");
+      return; // dans le cas ou les champs sont vides  critere #6     
+      }
+
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
+      // Authentification avec Firebase
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _loginController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      // catches the error if the login fails and displays a snackbar with the error message
+
+      final user = userCredential.user;
+      if (user != null) {
+        // Si l'utilisateur existe, rediriger
+        print("Utilisateur connecté : ${user.email}");
+        Navigator.pushReplacementNamed(context, "/home");
+      }
     } on FirebaseAuthException catch (e) {
-      // Show error message to user using a SnackBar.
-      String errorMessage = e.message ?? 'An error occurred';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      // Si l'utilisateur n'existe pas ou autre erreur
+      print("Erreur lors de la connexion : ${e.code}");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -31,43 +53,49 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blueAccent, // A vibrant background color
-        elevation: 2, // Slight shadow for subtle depth
-        title: Text(
-          'Zara Maroc',
-          style: TextStyle(
-            color: Colors.white, // Contrasting text color
-            fontSize: 20, // Slightly larger font size for visibility
-            fontWeight: FontWeight.bold, // Bold for emphasis
-          ),
-        ),
-        centerTitle: true, // Centers the title in the AppBar
+        title: const Text("Yc Clothes"), // Nom de l'application critere #1
+        centerTitle: true,
+        backgroundColor: Colors.deepPurple, // AppBar color
+
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Login'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // criter #2
+              TextFormField(
+                controller: _loginController,
+                decoration: const InputDecoration(labelText: "Login"),
                 keyboardType: TextInputType.emailAddress,
               ),
-              TextField(
+              const SizedBox(height: 16),
+              // criter #2
+              TextFormField(
                 controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(labelText: 'Password'),
+                decoration: const InputDecoration(labelText: "Password"),
+                obscureText: true, // Champ obfusqué critere # 3
               ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => _signInWithEmailAndPassword(context),
-                child: Text('Se connecter'),
-              ),
+              const SizedBox(height: 24),
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton(
+                      onPressed: _loginUser,
+                      child: const Text("Se connecter"), // critere #4
+                    ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _loginController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }
