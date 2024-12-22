@@ -58,9 +58,9 @@ class CartPage extends StatelessWidget {
                     return ListTile(
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      leading: data['image'] != null
+                      leading: data['imageBase64'] != null
                           ? Image.network(
-                              data['image'],
+                              data['imageBase64'],
                               fit: BoxFit.cover,
                               width: 50,
                               height: 50,
