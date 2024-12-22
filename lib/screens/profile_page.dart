@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -21,7 +20,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _cityController = TextEditingController();
 
   bool _isLoading = false;
-  bool _isPasswordEditable = false; // Pour activer/désactiver l'édition du mot de passe
+  bool _isPasswordEditable = false;
 
   @override
   void initState() {
@@ -38,6 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
+      // critere 1 : recuperer les informations de l'utilisateur depuis la base de données
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -45,9 +45,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       final data = snapshot.data();
       if (data != null) {
+        // criter 2 : afficher les informations de l'utilisateur login , mot de passe, adresse, code postal, ville
         setState(() {
           _emailController.text = user.email!;
-          _passwordController.text = "******"; // Mot de passe masqué
+          _passwordController.text = "******"; // Masqué
           _birthdayController.text = data['birthday'] ?? '';
           _addressController.text = data['address'] ?? '';
           _postalCodeController.text = data['postalCode'] ?? '';
@@ -63,33 +64,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _updatePassword(String newPassword) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      await user.updatePassword(newPassword);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Mot de passe mis à jour avec succès !")),
-      );
-    } on FirebaseAuthException catch (e) {
-      String errorMessage;
-      switch (e.code) {
-        case 'weak-password':
-          errorMessage = "Le mot de passe est trop faible.";
-          break;
-        case 'requires-recent-login':
-          errorMessage = "Reconnectez-vous pour modifier le mot de passe.";
-          break;
-        default:
-          errorMessage = "Erreur : ${e.message}";
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
-    }
-  }
-
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -100,17 +74,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) return;
 
-        // Mettre à jour les informations dans Firestore
         await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
           'birthday': _birthdayController.text,
           'address': _addressController.text,
           'postalCode': _postalCodeController.text,
           'city': _cityController.text,
         });
-
-        if (_isPasswordEditable && _passwordController.text != "******") {
-          await _updatePassword(_passwordController.text);
-        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Profil mis à jour avec succès !")),
@@ -128,26 +97,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushReplacementNamed(context, "/login");
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Profil"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            tooltip: "Valider",
-            onPressed: _updateProfile,
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: "Se déconnecter",
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushReplacementNamed(context, "/login");
-            },
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -157,15 +116,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 key: _formKey,
                 child: ListView(
                   children: [
-                    // read-only 
                     TextFormField(
                       controller: _emailController,
                       readOnly: true,
                       decoration: const InputDecoration(labelText: "Email"),
                     ),
                     const SizedBox(height: 16),
-
-                    //  obfuscated password
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
@@ -184,19 +140,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           },
                         ),
                       ),
-                      validator: (value) {
-                        if (_isPasswordEditable && (value == null || value.isEmpty)) {
-                          return "Veuillez entrer un nouveau mot de passe.";
-                        }
-                        if (_isPasswordEditable && value!.length < 6) {
-                          return "Le mot de passe doit contenir au moins 6 caractères.";
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 16),
-
-                    // Anniversaire
                     TextFormField(
                       controller: _birthdayController,
                       decoration: const InputDecoration(labelText: "Anniversaire"),
@@ -208,8 +153,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // Adresse
                     TextFormField(
                       controller: _addressController,
                       decoration: const InputDecoration(labelText: "Adresse"),
@@ -221,31 +164,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // Code postal
                     TextFormField(
                       controller: _postalCodeController,
                       decoration: const InputDecoration(labelText: "Code postal"),
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return "Veuillez entrer votre code postal.";
-                        }
-                        if (!RegExp(r'^\d+$').hasMatch(value)) {
-                          return "Entrez un code postal valide.";
-                        }
-                        if (value.length != 5) {
-                          return "Le code postal doit contenir 5 chiffres.";
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // Ville
                     TextFormField(
                       controller: _cityController,
                       decoration: const InputDecoration(labelText: "Ville"),
@@ -255,6 +185,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // critere 3 : bouton valider 
+                        ElevatedButton(
+                          onPressed: _updateProfile,
+                          child: const Text("Valider"),
+                        ),
+                        // critere 4 : bouton se deconnecter
+                        ElevatedButton(
+                          onPressed: _logout,
+                          child: const Text("Se déconnecter"),
+                        
+                        ),
+                      ],
                     ),
                   ],
                 ),
