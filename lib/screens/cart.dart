@@ -44,24 +44,70 @@ class CartPage extends StatelessWidget {
             return Center(child: Text('Votre panier est vide.'));
           }
 
-          return ListView(
-            children: documents.map((document) {
-              final data = document.data() as Map<String, dynamic>;
-              return ListTile(
-                title: Text(data['title'] ?? 'No Title'),
-                subtitle: Text(data['category'] ?? 'No Category'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+          double total = 0.0;
+          return Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  children: documents.map((document) {
+                    final data = document.data() as Map<String, dynamic>;
+                    // critere 2 : prix total
+                    final double price = data['price']?.toDouble() ?? 0.0;
+                    total += price;
+                    // critere 1 : image taille , prix, titre 
+                    return ListTile(
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      leading: data['image'] != null
+                          ? Image.network(
+                              data['image'],
+                              fit: BoxFit.cover,
+                              width: 50,
+                              height: 50,
+                            )
+                          : Container(
+                              width: 50,
+                              height: 50,
+                              color: Colors.grey[300],
+                              child: Center(child: Text('No Image')),
+                            ),
+                      title: Text(data['title'] ?? 'No Title'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Size: ${data['size'] ?? 'No Size'}'),
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('${price.toStringAsFixed(2)} €'),
+                          IconButton(
+                            // critere 3 : retirer vetement du panier
+                            icon: Icon(Icons.close),
+                            onPressed: () => _removeFromCart(document.id),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('${data['price']?.toStringAsFixed(2) ?? '0.00'} €'),
-                    IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () => _removeFromCart(document.id),
+                    Text(
+                      'Total: ${total.toStringAsFixed(2)} €',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
+                    
                   ],
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           );
         },
       ),
