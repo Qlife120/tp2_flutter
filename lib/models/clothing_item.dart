@@ -4,6 +4,7 @@ class ClothingItem {
   final String size;
   final String brand;
   final double price;
+  final String? imageBase64;  // Add imageBase64 field
 
   ClothingItem({
     required this.title,
@@ -11,6 +12,7 @@ class ClothingItem {
     required this.size,
     required this.brand,
     required this.price,
+    this.imageBase64,  // Add imageBase64 to the constructor
   });
 
   Map<String, dynamic> toMap() {
@@ -20,16 +22,7 @@ class ClothingItem {
       'size': size,
       'brand': brand,
       'price': price,
+      'imageBase64': imageBase64,  // Save imageBase64 in the map
     };
-  }
-
-  factory ClothingItem.fromMap(Map<String, dynamic> map) {
-    return ClothingItem(
-      title: map['title'],
-      category: map['category'],
-      size: map['size'],
-      brand: map['brand'],
-      price: map['price'],
-    );
   }
 }

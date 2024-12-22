@@ -5,6 +5,8 @@ import 'add_clothing_item_screen.dart'; // import the add clothing item screen
 import 'detail_clothes.dart'; // import the detail clothes screen
 import 'cart.dart'; // import the cart screen
 import 'profile_page.dart';
+import 'dart:convert'; // For base64 decoding
+import 'dart:typed_data'; // For byte data
 
 class HomePage extends StatefulWidget {
   final User user;
@@ -27,7 +29,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildClothingList() {
     return StreamBuilder<QuerySnapshot>(
-      // critere 6 ; recuperer les articles de la base de données
+      // Retrieve clothing items from Firestore
       stream: _firestore.collection('clothing_items').snapshots(),
       builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (snapshot.hasError) {
@@ -47,23 +49,23 @@ class _HomePageState extends State<HomePage> {
           itemCount: documents.length,
           itemBuilder: (context, index) {
             final data = documents[index].data() as Map<String, dynamic>? ?? {};
+
+            // Check if the imageBase64 exists and decode it to display the image
+            String? imageBase64 = data['imageBase64'];
+            Uint8List? imageBytes;
+            if (imageBase64 != null) {
+              imageBytes = base64Decode(imageBase64);
+            }
+
             return Card(
-              margin:
-                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-              // critere 4 :  LIste deroulante des articles
+              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               child: ListTile(
-                leading: data['imageUrl'] != null
-                    ? Image.network(
-                        data['imageUrl'],
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      )
+                leading: imageBytes != null
+                    ? Image.memory(imageBytes, width: 50, height: 50, fit: BoxFit.cover)
                     : const Icon(Icons.image_not_supported),
                 title: Text(data['title'] ?? 'Sans titre'),
                 subtitle: Text(
                     'Taille: ${data['size'] ?? 'Inconnue'}\nPrix: ${(data['price'] ?? 0).toStringAsFixed(2)} €'),
-                // critere 5 :  voir les détails de l'article
                 onTap: () {
                   Navigator.push(
                     context,
@@ -109,12 +111,10 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      // critere # 1 : Bottom navigationBar : Acheter , Panier , Profil
       bottomNavigationBar: BottomNavigationBar(
-        // # critere 2 a different color for the selected tab
         currentIndex: _selectedIndex,
         onTap: _onTabSelected,
-        selectedItemColor: Colors.deepPurple, // Highlight the selected tab
+        selectedItemColor: Colors.deepPurple,
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(

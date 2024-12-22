@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker_web/image_picker_web.dart'; // For web image picking
+import 'dart:convert'; // For base64 encoding
+import 'dart:typed_data'; // For byte data
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/clothing_item.dart';
 
 class AddClothingItemScreen extends StatefulWidget {
-
   @override
-  
   _AddClothingItemScreenState createState() => _AddClothingItemScreenState();
-
 }
 
 class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
@@ -17,27 +17,52 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
   final TextEditingController _brandController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   String? _category = 'Pantalon';
+  String? _imageBase64; // Store base64 image
 
+  // Method to pick an image
+  Future<void> _pickImage() async {
+    print("Picking image...");
+
+    // Ensure that the function is called correctly
+    final file = await ImagePickerWeb.getImageAsBytes();
+    if (file != null) {
+      print("Image selected: ${file.length} bytes");
+
+      setState(() {
+        _imageBase64 = base64Encode(file); // Store the image as base64 string
+      });
+
+      print("Image base64: $_imageBase64");
+    } else {
+      print("No image selected");
+    }
+  }
+
+  // Method to handle form submission
   Future<void> _submitForm() async {
-    // Validate the form
     if (_formKey.currentState!.validate()) {
-      // Create a ClothingItem object
+      if (_imageBase64 == null) {
+        // Show a snackbar if no image is selected
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez ajouter une image')));
+        return;
+      }
+
+      // Create a ClothingItem object with the picked data
       final newClothingItem = ClothingItem(
         title: _titleController.text,
         category: _category!,
         size: _sizeController.text,
         brand: _brandController.text,
         price: double.tryParse(_priceController.text) ?? 0.0,
+        imageBase64: _imageBase64, // Pass the base64 string
       );
 
       // Save the data to Firestore
       await FirebaseFirestore.instance.collection('clothing_items').add(newClothingItem.toMap());
 
-      // A snackbar to display a confirmation message
+      // Display a confirmation snackbar
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vêtement ajouté avec succès!')));
-    }
-
-    else{
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez remplir tous les champs du formulaire')));
     }
   }
@@ -85,6 +110,13 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
                 decoration: InputDecoration(labelText: 'Prix'),
                 keyboardType: TextInputType.number,
                 validator: (value) => value!.isEmpty || double.tryParse(value) == null ? 'Veuillez entrer un prix valide' : null,
+              ),
+              SizedBox(height: 20),
+              GestureDetector(
+                onTap: _pickImage, // Tap to pick image
+                child: _imageBase64 != null
+                    ? Image.memory(Uint8List.fromList(base64Decode(_imageBase64!))) // Display the image
+                    : Icon(Icons.add_a_photo, size: 100),
               ),
               SizedBox(height: 20),
               ElevatedButton(

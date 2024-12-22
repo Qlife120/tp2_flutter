@@ -38,10 +38,9 @@ class MyApp extends StatelessWidget {
           final User? user = snapshot.data;
           if (user == null) {
             return LoginScreen();
-            //return AddClothingItemScreen();
+            
           }
-          // TODO : change this // redirect the user to the home page with 3 icons and an add button 
-          //return AddClothingItemScreen();
+          
           return HomePage(user: user);
 
           //return HomePage(user: user);

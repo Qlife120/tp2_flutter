@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tp2/screens/add_clothing_item_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -74,7 +75,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) return;
 
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({
           'birthday': _birthdayController.text,
           'address': _addressController.text,
           'postalCode': _postalCodeController.text,
@@ -129,7 +133,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: InputDecoration(
                         labelText: "Mot de passe",
                         suffixIcon: IconButton(
-                          icon: Icon(_isPasswordEditable ? Icons.lock_open : Icons.lock),
+                          icon: Icon(_isPasswordEditable
+                              ? Icons.lock_open
+                              : Icons.lock),
                           onPressed: () {
                             setState(() {
                               _isPasswordEditable = !_isPasswordEditable;
@@ -144,7 +150,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _birthdayController,
-                      decoration: const InputDecoration(labelText: "Anniversaire"),
+                      decoration:
+                          const InputDecoration(labelText: "Anniversaire"),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return "Veuillez entrer votre anniversaire.";
@@ -166,7 +173,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _postalCodeController,
-                      decoration: const InputDecoration(labelText: "Code postal"),
+                      decoration:
+                          const InputDecoration(labelText: "Code postal"),
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -190,7 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // critere 3 : bouton valider 
+                        // critere 3 : bouton valider
                         ElevatedButton(
                           onPressed: _updateProfile,
                           child: const Text("Valider"),
@@ -199,7 +207,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ElevatedButton(
                           onPressed: _logout,
                           child: const Text("Se déconnecter"),
-                        
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      AddClothingItemScreen()),
+                            );
+                          },
+                          child: Text('Ajouter un nouveau vêtement'),
                         ),
                       ],
                     ),
